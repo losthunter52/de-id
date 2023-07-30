@@ -1,8 +1,6 @@
 ﻿
 # Running the api
 
-this library 
-
 ## Terminal 1
 ```bash
   [...]
