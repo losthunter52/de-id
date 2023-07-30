@@ -1,6 +1,8 @@
 ﻿
 # Running the api
 
+with Redis running on redis://127.0.0.1:6379
+
 ## Terminal 1
 ```bash
   [...]
