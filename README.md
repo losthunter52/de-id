@@ -1,9 +1,12 @@
 ﻿
-# Running the api
+# Anonymizer
 
-with Redis running on redis://127.0.0.1:6379
+this library 
 
-## Terminal 1
+## Running the program
+
+On the root of the repository run:
+
 ```bash
   [...]
     cd de-id
@@ -17,14 +20,10 @@ with Redis running on redis://127.0.0.1:6379
   [...]
 ```
 
-## Terminal 2
+
 ```bash
   [...]
     cd de-id
-    python -m venv celery_venv
-    celery_venv/scripts/activate
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
     celery -A config worker --pool=solo -l info
   [...]
 ```
