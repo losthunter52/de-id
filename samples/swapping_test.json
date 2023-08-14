@@ -1,0 +1,46 @@
+{
+    "execution_parameters": [
+        {
+            "algorithm": "swap.rows",
+            "columns": [
+                "nome",
+                "sobrenome",
+                "nome_completo"
+            ]
+        },
+        {
+            "algorithm": "swap.columns",
+            "columns": [
+                "value_1",
+                "value_2",
+                "value_3"
+            ]
+        }
+    ],
+    "data": [
+        {
+            "nome": "Wain",
+            "sobrenome": "Mitchard",
+            "nome_completo": "Wain Mitchard",
+            "value_1": 1,
+            "value_2": 1,
+            "value_3": 1
+        },
+        {
+            "nome": "Mariam",
+            "sobrenome": "Backson",
+            "nome_completo": "Mariam Backson",
+            "value_1": 2,
+            "value_2": 2,
+            "value_3": 2
+        },
+        {
+            "nome": "Amalea",
+            "sobrenome": "Gambles",
+            "nome_completo": "Amalea Gambles",
+            "value_1": 3,
+            "value_2": 3,
+            "value_3": 3
+        }
+    ]
+}

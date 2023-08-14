@@ -1,180 +1,222 @@
-import numpy as np
+from anonymizer.utils.data_processing import convert_to_string, check_nan_fields, check_columns
 import re
 
-
-def mask_full(df, column_names, semaphore):
+def mask_full(df, columns, semaphore, **configuration):
     """
     Applies the '*' mask to all specified columns.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        column_names (list): A list of column names to apply the mask to.
+        columns (list): A list of column names to apply the mask to.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+
+    Returns:
+        None
     """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    df[column_names] = df[column_names].fillna('*')
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+
+    check_columns(df, columns)
+    convert_to_string(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()
+    for column in columns:
+        df[column] = '*'
+    semaphore.release()
+
+    return None
 
 
-def mask_range(df, column_names, start_index, end_index, semaphore):
+def mask_range(df, columns, semaphore, **configuration): 
     """
     Applies the '*' mask to a range of characters in each specified column.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        column_names (list): A list of column names to apply the mask to.
-        start_index (int): The starting index of the range (inclusive).
-        end_index (int): The ending index of the range (exclusive).
+        columns (list): A list of column names to apply the mask to.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
-    """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    for column in column_names:
-        df[column] = apply_range_mask_vectorized(df[column], start_index, end_index)
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
-
-
-def apply_range_mask_vectorized(column, start_index, end_index):
-    """
-    Applies the '*' mask to a range of characters in the column.
-
-    Args:
-        column (pandas.Series): The input column.
-        start_index (int): The starting index of the range (inclusive).
-        end_index (int): The ending index of the range (exclusive).
+        configuration (dict): A dictionary containing the mask configuration parameters.
+            - 'start_index' (int): The starting index of the range.
+            - 'end_index' (int): The ending index of the range.
 
     Returns:
-        pandas.Series: The column with the specified range masked.
+        None
     """
-    mask = np.arange(len(column)).reshape(-1, 1) >= start_index
-    mask &= np.arange(len(column)).reshape(-1, 1) < end_index
-    column[mask] = '*'
+    start_index = configuration.get('start_index')
+    if not start_index:
+        raise ValueError("Start Index not provided in the configuration.")
+    elif not isinstance(start_index, int):
+        raise ValueError("Start Index should be an integer.")
+    
+    end_index = configuration.get('end_index')
+    if not end_index:
+        raise ValueError("End Index not provided in the configuration.")
+    elif not isinstance(end_index, int):
+        raise ValueError("End Index should be an integer.")
+    
+    if start_index < 1:
+        raise ValueError("Start_index must be higher than zero.")
+    if start_index >= end_index:
+        raise ValueError("Invalid range.")  
+    
+    start_index -= 1
+    end_index -= 1
+    
+    check_columns(df, columns)
+    convert_to_string(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()
+    for column in columns:
+        df[column] = apply_range_mask(df[column], start_index, end_index)
+    semaphore.release()
+
+    return None
+
+
+def apply_range_mask(column, start_index, end_index):        
+    start_index = min(start_index, len(str(column.iloc[0])))
+    column = column.apply(
+        lambda val: val[:start_index] + '*' * (min(end_index, len(val)) - start_index) + val[min(end_index, len(val)):]
+    )
+    
     return column
 
 
-def mask_last_n_characters(df, column_names, n, semaphore):
+def mask_last_n_characters(df, columns, semaphore, **configuration): 
     """
     Applies the '*' mask to the last N characters of each specified column.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        column_names (list): A list of column names to apply the mask to.
-        n (int): The number of characters to mask from the end of each value.
+        columns (list): A list of column names to apply the mask to.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
-    """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    for column in column_names:
-        df[column] = apply_last_n_character_mask_vectorized(df[column], n)
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
-
-
-def apply_last_n_character_mask_vectorized(column, n):
-    """
-    Applies the '*' mask to the last N characters of the column.
-
-    Args:
-        column (pandas.Series): The input column.
-        n (int): The number of characters to mask from the end of each value.
+        configuration (dict): A dictionary containing the mask configuration parameters.
+            - 'n' (int): The number of characters to mask from the end of each value.
 
     Returns:
-        pandas.Series: The column with the specified range masked.
+        None
     """
-    mask = np.array([len(str(val)) > n for val in column])
-    column[mask] = ['*' * n for _ in range(len(column[mask]))]
-    return column
+    n = configuration.get('n')
+    if not n:
+        raise ValueError("N Value not provided in the configuration.")
+    elif not isinstance(n, int):
+        raise ValueError("N should be an integer.")
+    elif n < 1:
+        raise ValueError("Start_index must be higher than zero.")
+    
+    check_columns(df, columns)
+    convert_to_string(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+    
+    semaphore.acquire()
+    for column in columns:
+        df[column] = apply_last_n_character_mask(df[column], n)
+    semaphore.release()
+
+    return None
 
 
-def mask_first_n_characters(df, column_names, n, semaphore):
+def apply_last_n_character_mask(column, n):
+    masked_column = column.apply(lambda val: str(val)[:-min(n, len(str(val)))] + '*' * min(n, len(str(val))))
+    return masked_column
+
+
+def mask_first_n_characters(df, columns, semaphore, **configuration): 
     """
     Applies the '*' mask to the first N characters of each specified column.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        column_names (list): A list of column names to apply the mask to.
-        n (int): The number of characters to mask from the beginning of each value.
+        columns (list): A list of column names to apply the mask to.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
-    """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    for column in column_names:
-        df[column] = apply_first_n_character_mask_vectorized(df[column], n)
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
-
-
-def apply_first_n_character_mask_vectorized(column, n):
-    """
-    Applies the '*' mask to the first N characters of the column.
-
-    Args:
-        column (pandas.Series): The input column.
-        n (int): The number of characters to mask from the beginning of each value.
+        configuration (dict): A dictionary containing the mask configuration parameters.
+            - 'n' (int): The number of characters to mask from the beginning of each value.
 
     Returns:
-        pandas.Series: The column with the specified range masked.
+        None
     """
-    mask = np.array([len(str(val)) > n for val in column])
-    column[mask] = ['*' * (len(str(val)) - n) + str(val)[-n:] for val in column[mask]]
-    return column
+    n = configuration.get('n')
+    if not n:
+        raise ValueError("N Value not provided in the configuration.")
+    elif not isinstance(n, int):
+        raise ValueError("N should be an integer.")
+    elif n < 1:
+        raise ValueError("Start_index must be higher than zero.")
+    
+    check_columns(df, columns)
+    convert_to_string(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()
+    for column in columns:
+        df[column] = apply_first_n_character_mask(df[column], n)
+    semaphore.release()
+
+    return None
 
 
-def mask_email(df, column_names, semaphore):
+def apply_first_n_character_mask(column, n):
+    masked_column = column.apply(lambda val: '*' * min(n, len(str(val))) + str(val)[min(n, len(str(val))):])
+    return masked_column
+
+
+def mask_email(df, columns, semaphore, **configuration): 
     """
-    Extracts the email domain from each specified column and replaces it with 'email.com' if it's not a valid email.
+    Extracts the email domain from each specified column and replaces invalid values with 'email.com'.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        column_names (list): A list of column names to apply the mask to.
+        columns (list): A list of column names to apply the mask to.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
-    """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    pattern = re.compile(r"@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
-    for column in column_names:
-        df[column] = extract_email_domain_vectorized(df[column], pattern)
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
-
-
-def extract_email_domain_vectorized(column, pattern):
-    """
-    Extracts the email domain from a column using a vectorized approach.
-
-    Args:
-        column (pandas.Series): The input column.
-        pattern (re.Pattern): The regular expression pattern to match the email domain.
 
     Returns:
-        pandas.Series: The column with the email domain extracted or replaced by 'email.com'.
+        None
     """
-    mask = column.str.contains(pattern)
-    column[mask] = column[mask].str.extract(pattern).str[1:]
-    column[~mask] = "email.com"
-    return column
+    check_columns(df, columns)
+    convert_to_string(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()
+    pattern = re.compile(r"@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)")
+    for column in columns:
+        df[column] = df[column].str.extract(pattern).fillna("email.com")
+    semaphore.release()
+
+    return None
 
 
-def mask_cpf(df, cpf_column, semaphore):
+def mask_cpf(df, columns, semaphore, **configuration): 
     """
     Applies the mask to CPFs, keeping only the first 3 digits and the last 2 digits visible.
 
     Args:
         df (pandas.DataFrame): The input DataFrame.
-        cpf_column (str): The name of the column containing CPF values.
+        columns (list): A list of column names to apply the mask to.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
-    """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    df[cpf_column] = mask_cpf_vectorized(df[cpf_column])
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
-
-
-def mask_cpf_vectorized(column):
-    """
-    Applies the mask to CPFs in a column using a vectorized approach.
-
-    Args:
-        column (pandas.Series): The input column.
 
     Returns:
-        pandas.Series: The column with the CPF values masked.
+        None
     """
-    cpf_lengths = column.str.len()
-    mask = cpf_lengths > 5
-    column[mask] = column[mask].str[:3] + "*" * (cpf_lengths[mask] - 5) + column[mask].str[-2:]
-    column[~mask] = "*" * cpf_lengths[~mask]
-    column = column.str[:3] + "." + column.str[3:6] + "." + column.str[6:9] + "-" + column.str[9:]
+
+    check_columns(df, columns)
+    convert_to_string(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()
+    for column in columns:
+        df[column] = apply_mask_cpf(df[column])
+    semaphore.release()
+
+    return None
+
+
+def apply_mask_cpf(column):
+    column = column.astype(str)
+    mask_11 = column.str.len() == 11
+    mask_14 = column.str.len() == 14
+
+    column[mask_11] = column[mask_11].str[:3] + '*' * 6 + column[mask_11].str[-2:]
+    column[mask_14] = column[mask_14].str[:3] + '.' + '*' * 3 + '.' + '*' * 3 + column[mask_14].str[-2:]
+    column[~(mask_11 | mask_14)] = '***.***.***-**'
+
     return column

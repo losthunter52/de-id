@@ -1,7 +1,8 @@
+from anonymizer.utils.data_processing import check_nan_fields, check_columns
 import pandas as pd
 import numpy as np
 
-def swap_columns(df, columns, semaphore):
+def swap_columns(df, columns, semaphore, **configuration):
     """
     Swaps the values in the specified columns of the DataFrame.
 
@@ -9,13 +10,23 @@ def swap_columns(df, columns, semaphore):
         df (pandas.DataFrame): The DataFrame to be modified.
         columns (str or list): Name of the column(s) to be swapped.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+
+    Returns: 
+        None
     """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
+
+    
+    check_columns(df, columns)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()  
     for column in columns:
         df[column] = np.random.permutation(df[column])
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+    semaphore.release()  
 
-def swap_rows(df, columns, semaphore):
+    return None
+
+def swap_rows(df, columns, semaphore, **configuration):
     """
     Swaps the rows of the DataFrame based on the values in the specified columns.
 
@@ -23,19 +34,20 @@ def swap_rows(df, columns, semaphore):
         df (pandas.DataFrame): The DataFrame to be modified.
         columns (str or list): Name of the column(s) to be used for row swapping.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+    
+    Returns: 
+        None
     """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
+
+    check_columns(df, columns)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire() 
     combined_column = '_combined_'
-    
-    # Create a combined column with the provided columns
     df[combined_column] = df[columns].apply(tuple, axis=1)
-    
-    # Shuffle the combined column
     df[combined_column] = np.random.permutation(df[combined_column])
-    
-    # Split the shuffled combined column back into separate columns
     df[columns] = pd.DataFrame(df[combined_column].tolist(), index=df.index)
-    
-    # Remove the combined column
     df.drop(columns=[combined_column], inplace=True)
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+    semaphore.release()
+
+    return None

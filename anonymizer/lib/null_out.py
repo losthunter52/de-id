@@ -1,4 +1,6 @@
-def drop_columns(df, columns, semaphore):
+from anonymizer.utils.data_processing import check_columns
+
+def drop_columns(df, columns, semaphore, **configuration):
     """
     Drops the specified columns from a DataFrame.
 
@@ -7,11 +9,14 @@ def drop_columns(df, columns, semaphore):
         columns (str or list): Name of the column(s) to be dropped.
         semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
 
-    Return:
-        Pandas DataFrame without the dropped columns.
+    Returns:
+        None
     """
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    df = df.drop(columns, axis=1)
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
 
-    return df
+    check_columns(df, columns)
+
+    semaphore.acquire()  
+    df.drop(columns, axis=1, inplace=True)
+    semaphore.release()  
+
+    return None

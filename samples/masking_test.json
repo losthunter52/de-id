@@ -1,0 +1,73 @@
+{
+    "execution_parameters": [
+        {
+            "algorithm": "mask.full",
+            "columns": [
+                "nome"
+            ]
+        },
+        {
+            "algorithm": "mask.first_n_characters",
+            "configuration": {
+                "n": 1
+            },
+            "columns": [
+                "sobrenome"
+            ]
+        },
+        {
+            "algorithm": "mask.last_n_characters",
+            "configuration": {
+                "n": 1
+            },
+            "columns": [
+                "sobrenome"
+            ]
+        },
+        {
+            "algorithm": "mask.range",
+            "configuration": {
+                "start_index": 1,
+                "end_index": 3
+            },
+            "columns": [
+                "nome_completo"
+            ]
+        },
+        {
+            "algorithm": "mask.email",
+            "columns": [
+                "e-mail"
+            ]
+        },
+        {
+            "algorithm": "mask.cpf",
+            "columns": [
+                "cpf"
+            ]
+        }
+    ],
+    "data": [
+        {
+            "nome": "Wain",
+            "sobrenome": "Mitchard",
+            "nome_completo": "Wain Mitchard",
+            "e-mail": "wain@mitchard.com",
+            "cpf": "565.996.130-47"
+        },
+        {
+            "nome": "Mariam",
+            "sobrenome": "Backson",
+            "nome_completo": "Mariam Backson",
+            "e-mail": "mariam@backson.com",
+            "cpf": "089.997.190-30"
+        },
+        {
+            "nome": "Amalea",
+            "sobrenome": "Gambles",
+            "nome_completo": "Amalea Gambles",
+            "e-mail": "amalea@gambles.com",
+            "cpf": "124.422.060-48"
+        }
+    ]
+}

@@ -1,36 +1,19 @@
 {
     "execution_parameters": [
         {
-            "algorithm": "encrypt.salsa20",
-            "configuration": {
-                "key": "secret_key"
-            },
+            "algorithm": "pseudonymize.rows",
             "columns": [
-                "nome"
-            ]
-        },
-        {
-            "algorithm": "encrypt.aes",
-            "configuration": {
-                "key": "secret_key"
-            },
-            "columns": [
+                "nome",
                 "sobrenome"
             ]
         },
         {
-            "algorithm": "encrypt.chacha20",
-            "configuration": {
-                "key": "secret_key"
-            },
+            "algorithm": "pseudonymize.columns",
             "columns": [
                 "nome_completo"
             ]
         }
     ],
-    "sensitive_columns": ["nome", "sobrenome", "nome_completo"],
-    "diversity_columns": ["nome", "sobrenome", "nome_completo"],
-    "closeness_columns": [],
     "data": [
         {
             "nome": "Wain",

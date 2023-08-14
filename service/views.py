@@ -9,22 +9,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from .models import Task
 
-def check_required_fields(data, fields):
-    """
-    Check if the required fields are present in the given data.
-
-    Args:
-        data (dict): The data dictionary to be checked.
-        fields (list): List of field names to be checked for presence.
-
-    Return:
-        bool: True if all required fields are present, False otherwise.
-    """
-    for field in fields:
-        if not data.get(field):
-            return False
-    return True
-
 @api_view(['POST'])
 @parser_classes([JSONParser])
 def register(request):
@@ -44,14 +28,10 @@ def register(request):
     if not check_required_fields(data, ['username', 'password']):
         return Response({"error": "Username and password are required."}, status=400)
 
-    # Check if the user already exists
     if User.objects.filter(username=username).exists():
         return Response({"error": "Username already exists."}, status=400)
 
-    # Create a new user
     user = User.objects.create_user(username=username, password=password)
-
-    # Create a token for the new user
     token = Token.objects.create(user=user)
 
     return Response({"token": token.key}, status=201)
@@ -76,19 +56,16 @@ def login(request):
     if not check_required_fields(data, ['username', 'password']):
         return Response({"error": "Username and password are required."}, status=400)
 
-    # Authenticate the user
     user = authenticate(username=username, password=password)
 
     if not user:
         return Response({"error": "Invalid username or password."}, status=401)
 
-    # Get or create a token for the authenticated user
     token, _ = Token.objects.get_or_create(user=user)
 
     return Response({"token": token.key}, status=200)
 
 
-# Use the list of decorators to group and avoid repetitions
 @api_view(['POST'])
 @parser_classes([JSONParser])
 @authentication_classes([TokenAuthentication])
@@ -104,22 +81,22 @@ def anonymize(request):
         rest_framework.response.Response: The HTTP response object containing the task status and ID.
     """
     data = request.data
+    
+    if not check_required_fields(data, ['execution_parameters', 'sensitive_columns', 'diversity_columns','closeness_columns', 'data']):
+        return Response({"message": "Missing required attributes in the JSON data."}, status=400)
 
-
-    # Call the Celery asynchronous task
-    task_result = process_data.delay(data, request.user.pk)
+    process_data.delay(data, request.user.pk)
 
     response = {
         "message": "Anonymization task has been scheduled."
     }
 
-    # Return a response confirming the request
     return Response(response, status=202)
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def result(request):
+def results(request):
     """
     Endpoint to retrieve the result of an anonymization task.
 
@@ -130,17 +107,54 @@ def result(request):
     Return:
         rest_framework.response.Response: The HTTP response object containing the task result or status.
     """
-    # Implement the logic to retrieve the anonymization task result
-    # based on the provided task_id and return it as a JSON response
-    result = []  # Logic to obtain the result based on task_id
+    results = []  
 
     user = request.user
     tasks = Task.objects.filter(user=user).order_by('-creation_date')
 
     for task in tasks:
-        if task.status == "COMPLETED_WITH_ERRORS":
-            result.append({"created_at": str(task.creation_date), "status": str(task.status), "errors": str(task.errors), "results": str(task.result)})
-        else:
-            result.append({"created_at": str(task.creation_date), "status": str(task.status), "results": str(task.result)})
+        results.append({"created_at": str(task.creation_date), "status": str(task.status), "task_id": str(task.task_id)})
 
-    return Response({"result": result})
+    return Response({"results": results})
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def result_detail(request, task_id):
+    """
+    Endpoint to retrieve a specific task by its ID.
+
+    Args:
+        request (rest_framework.request.Request): The HTTP request object.
+        task_id (str): The ID of the task to retrieve.
+
+    Return:
+        rest_framework.response.Response: The HTTP response object containing the task details.
+    """
+    user = request.user
+
+    try:
+        task = Task.objects.get(task_id=task_id, user=user)
+        task_details = {
+            "id": str(task.task_id),
+            "created_at": str(task.creation_date),
+            "status": str(task.status),
+            "results": str(task.result),
+            "errors": str(task.errors),
+            "real_data_k_anonymity": str(task.real_data_k_anonymity),
+            "real_data_t_closeness": str(task.real_data_t_closeness),
+            "real_data_l_diversity": str(task.real_data_l_diversity),
+            "anonymized_data_k_anonymity": str(task.anonymized_data_k_anonymity),
+            "anonymized_data_t_closeness": str(task.anonymized_data_t_closeness),
+            "anonymized_data_l_diversity": str(task.anonymized_data_l_diversity)
+        }
+        return Response(task_details)
+    except Task.DoesNotExist:
+        return Response({"message": "Task not found."}, status=404)
+    
+
+def check_required_fields(data, fields):
+    for field in fields:
+        if not data.get(field):
+            return False
+    return True

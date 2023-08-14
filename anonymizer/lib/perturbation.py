@@ -1,19 +1,42 @@
+from anonymizer.utils.data_processing import  convert_to_datetime, convert_to_numeric, check_nan_fields, check_columns
 import pandas as pd
 import numpy as np
 import random
 
-def perturb_date(df, columns, unit, min_val, max_val, semaphore):
+def perturb_date(df, columns, semaphore, **configuration):
     """
     Applies a date perturbation technique to specific columns of the DataFrame.
 
     Args:
-    - df: pandas DataFrame.
-    - columns: List of columns where the perturbation will be applied.
-    - unit: Unit of time to be added/subtracted (e.g., 'days', 'hours', 'minutes').
-    - min_val: Minimum number of units to be added/subtracted.
-    - max_val: Maximum number of units to be added/subtracted.
-    - semaphore: threading.Semaphore to synchronize access to the DataFrame.
+        df (pandas.DataFrame): The input DataFrame.
+        columns (list): A list of column names to apply the perturbation to.
+        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+        configuration (dict): A dictionary containing the perturbation configuration parameters.
+            - unit (string): Unit of time to be added/subtracted (e.g., 'days', 'hours', 'minutes').
+            - min_value (int): Minimum number of units to be added/subtracted.
+            - max_value (int): Maximum number of units to be added/subtracted.
+
+    Returns:
+        None
     """
+    unit = configuration.get('unit')
+    if not unit:
+        raise ValueError("Unit of Time not provided in the configuration.")
+    elif not isinstance(unit, int):
+        raise ValueError("Unit of Time should be an string.")
+    
+    min_value = configuration.get('min_value')
+    if not min_value:
+        raise ValueError("Minimum number of units not provided in the configuration.")
+    elif not isinstance(min_value, int):
+        raise ValueError("Minimum number of units should be an integer.")
+    
+    max_value = configuration.get('max_value')
+    if not max_value:
+        raise ValueError("Maximum number of units not provided in the configuration.")
+    elif not isinstance(max_value, int):
+        raise ValueError("Maximum number of units should be an integer.")
+
 
     supported_units = [
         'days',
@@ -27,92 +50,139 @@ def perturb_date(df, columns, unit, min_val, max_val, semaphore):
 
     if unit not in supported_units:
         raise ValueError(f"Unsupported unit: {unit}")
+    
+    check_columns(df, columns)
+    convert_to_datetime(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
 
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
+    semaphore.acquire()  
     for column in columns:
-        df[column] = df[column].apply(lambda x: x + pd.Timedelta(**{unit: random.randint(min_val, max_val)}))
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+        df[column] = df[column].apply(lambda x: x + pd.Timedelta(**{unit: random.randint(min_value, max_value)}))
+    semaphore.release()  
+
+    return None
 
 
-def perturb_numeric_range(df, columns, perturbation_range, semaphore):
+def perturb_numeric_range(df, columns, semaphore, **configuration): 
     """
     Applies a numeric perturbation technique to specific columns of the DataFrame.
 
     Args:
-    - df: pandas DataFrame.
-    - columns: List of columns where the perturbation will be applied.
-    - perturbation_range: Range of perturbation values as a tuple (min_val, max_val).
-    - semaphore: threading.Semaphore to synchronize access to the DataFrame.
+        df (pandas.DataFrame): The input DataFrame.
+        columns (list): A list of column names to apply the perturbation to.
+        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+        configuration (dict): A dictionary containing the perturbation configuration parameters.
+            - min_value: Minimum of the range of the perturbation.
+            - max_value: Maximum of the range of the perturbation.
+    
+    Returns:
+        None
     """
 
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    for column in columns:
-        original_values = df[column]
-        perturbed_values = original_values.copy()
+    min_value = configuration.get('min_value')
+    if not min_value:
+        raise ValueError("Minimum of the range not provided in the configuration.")
+    elif not isinstance(min_value, int):
+        raise ValueError("Minimum of the range should be an integer.")
+    
+    max_value = configuration.get('max_value')
+    if not max_value:
+        raise ValueError("Maximum of the range not provided in the configuration.")
+    elif not isinstance(max_value, int):
+        raise ValueError("Maximum of the range should be an integer.")
+    
+    if min_value >= max_value:
+        raise ValueError("Invalid range.")  
 
-        # Check the column type (int or float) and perturb the values
-        if np.issubdtype(original_values.dtype, np.integer):
-            perturbed_values += np.random.randint(*perturbation_range, size=len(original_values))
-        elif np.issubdtype(original_values.dtype, np.floating):
-            perturbed_values += np.random.uniform(*perturbation_range, size=len(original_values))
+    perturbation_range = (min_value, max_value)
+
+    check_columns(df, columns)
+    convert_to_numeric(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()  
+    for column in columns:
+        if np.issubdtype(df[column].dtype, np.integer):
+            df[column] += np.random.randint(*perturbation_range, size=len(df[column]))
+        elif np.issubdtype(df[column].dtype, np.floating):
+            df[column] += np.random.uniform(*perturbation_range, size=len(df[column]))
         else:
             raise ValueError(f"Column '{column}' is not of type int or float.")
+    semaphore.release() 
 
-        df[column] = perturbed_values
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+    return None
 
 
-def perturb_numeric_gaussian(df, columns, perturbation_std, semaphore):
+def perturb_numeric_gaussian(df, columns, semaphore, **configuration): 
     """
     Applies a Gaussian perturbation technique to specific columns of the DataFrame.
 
     Args:
-    - df: pandas DataFrame.
-    - columns: List of columns where the perturbation will be applied.
-    - perturbation_std: Standard deviation of the Gaussian perturbation.
-    - semaphore: threading.Semaphore to synchronize access to the DataFrame.
+        df (pandas.DataFrame): The input DataFrame.
+        columns (list): A list of column names to apply the perturbation to.
+        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+        configuration (dict): A dictionary containing the perturbation configuration parameters.
+            - std: Standard deviation of the Gaussian perturbation.
+    
+    Returns:
+        None
     """
 
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    for column in columns:
-        original_values = df[column]
-        perturbed_values = original_values.copy()
+    std = configuration.get('std')
+    if not std:
+        raise ValueError("Perturbation std not provided in the configuration.")
+    elif not isinstance(std, float):
+        raise ValueError("Perturbation std should be an float.")
 
-        # Check the column type (int or float) and perturb the values
-        if np.issubdtype(original_values.dtype, np.integer):
-            perturbed_values += np.random.normal(scale=perturbation_std, size=len(original_values)).astype(int)
-        elif np.issubdtype(original_values.dtype, np.floating):
-            perturbed_values += np.random.normal(scale=perturbation_std, size=len(original_values))
+    check_columns(df, columns)
+    convert_to_numeric(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire()  
+    for column in columns:
+        if np.issubdtype(df[column].dtype, np.integer):
+            df[column] += np.random.normal(scale=std, size=len(df[column])).astype(int)
+        elif np.issubdtype(df[column].dtype, np.floating):
+            df[column] += np.random.normal(scale=std, size=len(df[column]))
         else:
             raise ValueError(f"Column '{column}' is not of type int or float.")
+    semaphore.release()  
 
-        df[column] = perturbed_values
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+    return None
 
-
-def perturb_numeric_laplacian(df, columns, perturbation_value, semaphore):
+def perturb_numeric_laplacian(df, columns, semaphore, **configuration): 
     """
     Applies a Laplacian perturbation technique to specific columns of the DataFrame.
 
     Args:
-    - df: pandas DataFrame.
-    - columns: List of columns where the perturbation will be applied.
-    - perturbation_value: Perturbation value.
-    - semaphore: threading.Semaphore to synchronize access to the DataFrame.
+        df (pandas.DataFrame): The input DataFrame.
+        columns (list): A list of column names to apply the perturbation to.
+        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
+        configuration (dict): A dictionary containing the perturbation configuration parameters.
+            - value: Perturbation value.
+    
+    Returns:
+        None
     """
 
-    semaphore.acquire()  # Acquire the semaphore before modifying the DataFrame
-    for column in columns:
-        original_values = df[column]
-        perturbed_values = original_values.copy()
+    value = configuration.get('value')
+    if not value:
+        raise ValueError("Perturbation value not provided in the configuration.")
+    elif not isinstance(value, int):
+        raise ValueError("Perturbation value should be an integer.")
 
-        # Check the column type (int or float) and perturb the values
-        if np.issubdtype(original_values.dtype, np.integer):
-            perturbed_values += np.random.laplace(scale=perturbation_value/np.sqrt(2), size=len(original_values))
-        elif np.issubdtype(original_values.dtype, np.floating):
-            perturbed_values += np.random.laplace(scale=perturbation_value/np.sqrt(2), size=len(original_values))
+    check_columns(df, columns)
+    convert_to_numeric(df, columns, semaphore)
+    check_nan_fields(df, columns, semaphore)
+
+    semaphore.acquire() 
+    for column in columns:
+        if np.issubdtype(df[column].dtype, np.integer):
+            df[column] += np.random.laplace(scale=value/np.sqrt(2), size=len(df[column]))
+        elif np.issubdtype(df[column].dtype, np.floating):
+            df[column] += np.random.laplace(scale=value/np.sqrt(2), size=len(df[column]))
         else:
             raise ValueError(f"Column '{column}' is not of type int or float.")
+    semaphore.release()  
 
-        df[column] = perturbed_values
-    semaphore.release()  # Release the semaphore after modifying the DataFrame
+    return None

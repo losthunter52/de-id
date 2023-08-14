@@ -7,7 +7,6 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'fallback-secret-key')
 
 DEBUG = True
 
-
 ALLOWED_HOSTS=['*']
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -47,7 +46,7 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',  # Adicione essa linha
+        'rest_framework.authentication.TokenAuthentication',  
     ),
 
 }
@@ -56,7 +55,7 @@ REST_FRAMEWORK = {
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Or use 'django.contrib.sessions.backends.cached_db' for cached sessions.
 
 # Session expiration (optional)
-SESSION_COOKIE_AGE = 3600  # Session expiration time in seconds (e.g., 3600 seconds = 1 hour)
+SESSION_COOKIE_AGE = 172800  # Session expiration time in seconds (e.g., 3600 seconds = 1 hour)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Set to True if you want sessions to expire when the user closes the browser.
 
 

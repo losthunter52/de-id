@@ -1,0 +1,28 @@
+{
+    "execution_parameters": [
+        {
+            "algorithm": "null_out.columns",
+            "columns": [
+                "porcentagem"
+            ]
+        }
+    ],
+    "data": [
+        {
+            "porcentagem": 21,
+            "idade": 16
+        },
+        {
+            "porcentagem": 2,
+            "idade": 14
+        },
+        {
+            "porcentagem": 13,
+            "idade": 1
+        },
+        {
+            "porcentagem": 64,
+            "idade": 24
+        }
+    ]
+}
