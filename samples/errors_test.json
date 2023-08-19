@@ -2,103 +2,95 @@
   "execution_parameters": [
     {
       "algorithm": "encrypt.chacha20",
-      "configuration": {
-        "key": "secret_key"
-      },
       "columns": ["nome"]
     },
     {
       "algorithm": "encrypt.aes",
       "configuration": {
         "key": "secret_key"
-      },
-      "columns": ["sobrenome"]
+      }
     },
     {
       "algorithm": "encrypt.salsa20",
       "configuration": {
-        "key": "secret_key"
+        "tetete": "secret_key"
       },
       "columns": ["sobrenome"]
     },
     {
       "algorithm": "generalize.percent",
-      "columns": ["latitude"]
+      "rere": ["latitude"]
     },
     {
-      "algorithm": "generalize.age",
+      "3232": "generalize.age",
       "columns": ["longitude"]
     },
     {
       "algorithm": "mask.cpf",
-      "columns": ["cpf"]
+      "columns": []
     },
     {
-      "algorithm": "mask.email",
+      "algorithm": "",
       "columns": ["email"]
     },
     {
-      "algorithm": "mask.full",
-      "columns": ["rg"]
+      "algorithm": 321,
+      "columns": "rg"
     },
     {
       "algorithm": "mask.first_n_characters",
       "configuration": {
-        "n": 1
+        "1": "n"
       },
       "columns": ["endereco"]
     },
     {
       "algorithm": "mask.last_n_characters",
       "configuration": {
-        "n": 1
+        "n": 143242
       },
       "columns": ["telefone"]
     },
     {
       "algorithm": "mask.range",
       "configuration": {
-        "start_index": 1,
-        "end_index": 3
+        "start_index": 5,
+        "end_index": 1
       },
       "columns": ["anamnese"]
     },
     {
       "algorithm": "swap.rows",
-      "columns": ["gender", "ip", "cidade", "estado"]
+      "columns": ["gender", "gender", "gender", "gender"]
     },
     {
       "algorithm": "swap.columns",
       "columns": [
         "data_de_nascimento",
-        "local_de_nascimento",
-        "celular",
-        "cartao_de_credito"
+        "data_de_nascimento",
+        "data_de_nascimento",
+        "data_de_nascimento"
       ]
     },
     {
-      "algorithm": "hash.md5",
       "columns": ["renda"]
     },
-    {
-      "algorithm": "hash.sha1",
-      "columns": ["titulo_de_eleitor"]
-    },
+    {},
     {
       "algorithm": "hash.sha256",
-      "columns": ["ra_exercito"]
+      "columns": [{"teste":1},{"n":"321"}]
     },
     {
       "algorithm": "pseudonymize.rows",
-      "columns": ["nacionalidade", "plano_terapeutico"]
+      "columns": [["nacionalidade"], ["plano_terapeutico"]]
     },
     {
       "algorithm": "pseudonymize.columns",
-      "columns": ["laudo_exames"]
+      "columns": {"laudo_exames": []}
     },
     {
-      "algorithm": "null_out.columns",
-      "columns": [
+      "columns": "null_out.columns",
+      "algorithm": [
         "prescricao_medica",
         "evolucao_quadro_clinico",
         "trajetoria_clinica",

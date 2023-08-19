@@ -14,14 +14,18 @@ def mask_full(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = '*'
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = '*'
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -61,14 +65,18 @@ def mask_range(df, columns, semaphore, **configuration):
     start_index -= 1
     end_index -= 1
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = apply_range_mask(df[column], start_index, end_index)
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = apply_range_mask(df[column], start_index, end_index)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -104,14 +112,18 @@ def mask_last_n_characters(df, columns, semaphore, **configuration):
     elif n < 1:
         raise ValueError("Start_index must be higher than zero.")
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
     
     semaphore.acquire()
-    for column in columns:
-        df[column] = apply_last_n_character_mask(df[column], n)
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = apply_last_n_character_mask(df[column], n)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -143,14 +155,18 @@ def mask_first_n_characters(df, columns, semaphore, **configuration):
     elif n < 1:
         raise ValueError("Start_index must be higher than zero.")
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = apply_first_n_character_mask(df[column], n)
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = apply_first_n_character_mask(df[column], n)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -172,15 +188,20 @@ def mask_email(df, columns, semaphore, **configuration):
     Returns:
         None
     """
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
-    semaphore.acquire()
     pattern = re.compile(r"@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)")
-    for column in columns:
-        df[column] = df[column].str.extract(pattern).fillna("email.com")
-    semaphore.release()
+
+    semaphore.acquire()
+    try:
+        for column in columns:
+            df[column] = df[column].str.extract(pattern).fillna("email.com")
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -198,14 +219,18 @@ def mask_cpf(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = apply_mask_cpf(df[column])
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = apply_mask_cpf(df[column])
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:    
+        semaphore.release()
 
     return None
 

@@ -47,6 +47,9 @@
             ]
         }
     ],
+    "sensitive_columns": ["nome", "sobrenome", "nome_completo", "e-mail", "cpf"],
+    "diversity_columns": ["nome", "sobrenome", "nome_completo", "e-mail", "cpf"],
+    "closeness_columns": ["nome", "sobrenome", "nome_completo", "e-mail", "cpf"],
     "data": [
         {
             "nome": "Wain",

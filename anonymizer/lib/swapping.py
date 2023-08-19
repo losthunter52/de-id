@@ -16,13 +16,17 @@ def swap_columns(df, columns, semaphore, **configuration):
     """
 
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()  
-    for column in columns:
-        df[column] = np.random.permutation(df[column])
-    semaphore.release()  
+    try:
+        for column in columns:
+            df[column] = np.random.permutation(df[column])
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     return None
 
@@ -39,15 +43,20 @@ def swap_rows(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
-    semaphore.acquire() 
     combined_column = '_combined_'
-    df[combined_column] = df[columns].apply(tuple, axis=1)
-    df[combined_column] = np.random.permutation(df[combined_column])
-    df[columns] = pd.DataFrame(df[combined_column].tolist(), index=df.index)
-    df.drop(columns=[combined_column], inplace=True)
-    semaphore.release()
+
+    semaphore.acquire() 
+    try:
+        df[combined_column] = df[columns].apply(tuple, axis=1)
+        df[combined_column] = np.random.permutation(df[combined_column])
+        df[columns] = pd.DataFrame(df[combined_column].tolist(), index=df.index)
+        df.drop(columns=[combined_column], inplace=True)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None

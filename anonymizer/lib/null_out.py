@@ -13,10 +13,14 @@ def drop_columns(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
 
     semaphore.acquire()  
-    df.drop(columns, axis=1, inplace=True)
-    semaphore.release()  
+    try:
+        df.drop(columns, axis=1, inplace=True)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     return None

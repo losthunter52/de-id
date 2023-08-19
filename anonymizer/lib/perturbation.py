@@ -22,7 +22,7 @@ def perturb_date(df, columns, semaphore, **configuration):
     unit = configuration.get('unit')
     if not unit:
         raise ValueError("Unit of Time not provided in the configuration.")
-    elif not isinstance(unit, int):
+    elif not isinstance(unit, str):
         raise ValueError("Unit of Time should be an string.")
     
     min_value = configuration.get('min_value')
@@ -51,14 +51,18 @@ def perturb_date(df, columns, semaphore, **configuration):
     if unit not in supported_units:
         raise ValueError(f"Unsupported unit: {unit}")
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_datetime(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()  
-    for column in columns:
-        df[column] = df[column].apply(lambda x: x + pd.Timedelta(**{unit: random.randint(min_value, max_value)}))
-    semaphore.release()  
+    try:
+        for column in columns:
+            df[column] = df[column].apply(lambda x: x + pd.Timedelta(**{unit: random.randint(min_value, max_value)}))
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     return None
 
@@ -96,19 +100,25 @@ def perturb_numeric_range(df, columns, semaphore, **configuration):
 
     perturbation_range = (min_value, max_value)
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_numeric(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()  
-    for column in columns:
-        if np.issubdtype(df[column].dtype, np.integer):
-            df[column] += np.random.randint(*perturbation_range, size=len(df[column]))
-        elif np.issubdtype(df[column].dtype, np.floating):
-            df[column] += np.random.uniform(*perturbation_range, size=len(df[column]))
-        else:
-            raise ValueError(f"Column '{column}' is not of type int or float.")
-    semaphore.release() 
+    try:
+        for column in columns:
+            if np.issubdtype(df[column].dtype, np.integer):
+                df[column] += np.random.randint(*perturbation_range, size=len(df[column]))
+            elif np.issubdtype(df[column].dtype, np.floating):
+                df[column] += np.random.uniform(*perturbation_range, size=len(df[column]))
+            else:
+                raise ValueError(f"Column '{column}' is not of type int or float.")
+    except ValueError as ve:
+            raise ValueError("" + ve)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release() 
 
     return None
 
@@ -134,19 +144,25 @@ def perturb_numeric_gaussian(df, columns, semaphore, **configuration):
     elif not isinstance(std, float):
         raise ValueError("Perturbation std should be an float.")
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_numeric(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()  
-    for column in columns:
-        if np.issubdtype(df[column].dtype, np.integer):
-            df[column] += np.random.normal(scale=std, size=len(df[column])).astype(int)
-        elif np.issubdtype(df[column].dtype, np.floating):
-            df[column] += np.random.normal(scale=std, size=len(df[column]))
-        else:
-            raise ValueError(f"Column '{column}' is not of type int or float.")
-    semaphore.release()  
+    try:
+        for column in columns:
+            if np.issubdtype(df[column].dtype, np.integer):
+                df[column] += np.random.normal(scale=std, size=len(df[column])).astype(int)
+            elif np.issubdtype(df[column].dtype, np.floating):
+                df[column] += np.random.normal(scale=std, size=len(df[column]))
+            else:
+                raise ValueError(f"Column '{column}' is not of type int or float.")
+    except ValueError as ve:
+            raise ValueError("" + ve)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     return None
 
@@ -171,18 +187,24 @@ def perturb_numeric_laplacian(df, columns, semaphore, **configuration):
     elif not isinstance(value, int):
         raise ValueError("Perturbation value should be an integer.")
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_numeric(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire() 
-    for column in columns:
-        if np.issubdtype(df[column].dtype, np.integer):
-            df[column] += np.random.laplace(scale=value/np.sqrt(2), size=len(df[column]))
-        elif np.issubdtype(df[column].dtype, np.floating):
-            df[column] += np.random.laplace(scale=value/np.sqrt(2), size=len(df[column]))
-        else:
-            raise ValueError(f"Column '{column}' is not of type int or float.")
-    semaphore.release()  
+    try:
+        for column in columns:
+            if np.issubdtype(df[column].dtype, np.integer):
+                df[column] += np.random.laplace(scale=value/np.sqrt(2), size=len(df[column]))
+            elif np.issubdtype(df[column].dtype, np.floating):
+                df[column] += np.random.laplace(scale=value/np.sqrt(2), size=len(df[column]))
+            else:
+                raise ValueError(f"Column '{column}' is not of type int or float.")
+    except ValueError as ve:
+            raise ValueError("" + ve)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     return None

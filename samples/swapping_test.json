@@ -17,6 +17,9 @@
             ]
         }
     ],
+    "sensitive_columns": ["nome", "sobrenome", "nome_completo"],
+    "diversity_columns": ["value_1", "value_2", "value_3"],
+    "closeness_columns": ["value_1", "value_2", "value_3"],
     "data": [
         {
             "nome": "Wain",

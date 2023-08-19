@@ -13,13 +13,17 @@ def percent_generalization(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_numeric(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()
-    df[columns] = df[columns].applymap(percent_generalize_func)
-    semaphore.release()
+    try:
+        df[columns] = df[columns].applymap(percent_generalize_func)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -36,13 +40,17 @@ def age_generalization(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_numeric(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()
-    df[columns] = df[columns].applymap(age_generalize_func)
-    semaphore.release()
+    try:
+        df[columns] = df[columns].applymap(age_generalize_func)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 

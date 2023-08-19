@@ -15,14 +15,18 @@ def pseudonymize_columns(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()  
-    for column in columns:
-        df[column] = df[column].apply(lambda x: f'{column}_{hashlib.md5(x.encode()).hexdigest()}' if pd.notnull(x) else x)
-    semaphore.release()  
+    try:
+        for column in columns:
+            df[column] = df[column].apply(lambda x: f'{column}_{hashlib.md5(x.encode()).hexdigest()}' if pd.notnull(x) else x)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:   
+        semaphore.release()  
 
     return None
 
@@ -39,15 +43,19 @@ def pseudonymize_rows(df, columns, semaphore, **configuration):
         None
     """
 
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
     semaphore.acquire()  
-    df['Object'] = df[columns].agg(''.join, axis=1)
-    df.drop(columns, axis=1, inplace=True)
+    try:
+        df['Object'] = df[columns].agg(''.join, axis=1)
+        df.drop(columns, axis=1, inplace=True)
     
-    df['Object'] = df['Object'].apply(lambda x: f'Object_{hashlib.md5(x.encode()).hexdigest()}' if pd.notnull(x) else x)
-    semaphore.release()
+        df['Object'] = df['Object'].apply(lambda x: f'Object_{hashlib.md5(x.encode()).hexdigest()}' if pd.notnull(x) else x)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None

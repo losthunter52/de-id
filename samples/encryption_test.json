@@ -30,7 +30,7 @@
     ],
     "sensitive_columns": ["nome", "sobrenome", "nome_completo"],
     "diversity_columns": ["nome", "sobrenome", "nome_completo"],
-    "closeness_columns": [],
+    "closeness_columns": ["nome", "sobrenome", "nome_completo"],
     "data": [
         {
             "nome": "Wain",

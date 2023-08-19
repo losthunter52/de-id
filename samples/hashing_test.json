@@ -19,6 +19,9 @@
             ]
         }
     ],
+    "sensitive_columns": ["nome", "sobrenome"],
+    "diversity_columns": ["idade"],
+    "closeness_columns": ["nome", "sobrenome", "idade"],
     "data": [
         {
             "nome": "Wain",

@@ -39,8 +39,12 @@ def convert_to_string(df, columns, semaphore):
         None
     """
     semaphore.acquire()  
-    df[columns] = df[columns].apply(pd.to_string, errors='coerce')
-    semaphore.release() 
+    try:
+        df[columns] = df[columns].applymap(lambda x: str(x) if pd.notna(x) else x)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release() 
 
     return None
 
@@ -58,8 +62,12 @@ def convert_to_numeric(df, columns, semaphore):
         None
     """
     semaphore.acquire()  
-    df[columns] = df[columns].apply(pd.to_numeric, errors='coerce')
-    semaphore.release()  
+    try:
+        df[columns] = df[columns].apply(pd.to_numeric, errors='coerce')
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     return None
 
@@ -76,8 +84,12 @@ def convert_to_datetime(df, columns, semaphore):
         None
     """
     semaphore.acquire()  
-    df[columns] = df[columns].apply(pd.to_datetime, errors='coerce', format='mixed')
-    semaphore.release() 
+    try:
+        df[columns] = df[columns].apply(pd.to_datetime, errors='coerce', format='mixed')
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release() 
 
     return None
 
@@ -95,18 +107,23 @@ def convert_to_bool(df, columns, semaphore):
     """
 
     semaphore.acquire()  
-    df[columns] = df[columns].apply(pd.to_bool, errors='coerce')
-    semaphore.release() 
+    try:
+        df[columns] = df[columns].apply(pd.to_bool, errors='coerce')
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release() 
 
     return None
 
-def check_columns(df, columns):
+def check_columns(df, columns, semaphore):
     """
     Checks if any columns are duplicated in the list and if specified columns are present in the DataFrame.
 
     Args:
         df (pandas.DataFrame): The DataFrame to be checked.
         columns (list): List of column names to be checked.
+        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
 
     Raises:
         ValueError: If any columns are duplicated in the list, if
@@ -128,28 +145,39 @@ def check_columns(df, columns):
     if duplicate_columns:
         raise ValueError(f"The following columns are duplicated in the list: {duplicate_columns}")
 
-    missing_columns = [col for col in columns if col not in df.columns]
+    semaphore.acquire()  
+    try:
+        missing_columns = [col for col in columns if col not in df.columns]
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release() 
+
     if missing_columns:
         raise ValueError(f"The following columns are missing in the DataFrame: {missing_columns}")
 
 
-def check_nan_fields(df, semaphore, columns):
+def check_nan_fields(df, columns, semaphore):
     """
     Checks if there are any specified columns in the DataFrame where all fields are NaN or NaT.
     Fills NaN values with the last valid value in forward and reverse order before performing the check.
 
     Args:
         df (pandas.DataFrame): The DataFrame to be checked.
-        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
         columns (list): List of column names to be checked.
+        semaphore (threading.Semaphore): Semaphore to synchronize access to the DataFrame.
 
     Raises:
         ValueError: If there are any specified columns where all fields are NaN or NaT.
     """
     semaphore.acquire()  
-    df[columns] = df[columns].fillna(method='ffill').fillna(method='bfill')
-    nan_columns = df[columns].columns[df[columns].isnull().all()]
-    semaphore.release()  
+    try:
+        df[columns] = df[columns].fillna(method='ffill').fillna(method='bfill')
+        nan_columns = df[columns].columns[df[columns].isnull().all()]
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()  
 
     if len(nan_columns) > 0:
         raise ValueError(f"There are columns in the specified columns where all fields are NaN or NaT: {nan_columns.tolist()}")

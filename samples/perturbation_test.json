@@ -107,6 +107,9 @@
             ]
         }
     ],
+    "sensitive_columns": ["days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds", "range", "gaussian", "laplacian"],
+    "diversity_columns": ["days", "hours", "minutes", "seconds", "milliseconds", "microseconds", "nanoseconds", "range", "gaussian", "laplacian"],
+    "closeness_columns": ["range", "gaussian", "laplacian"],
     "data": [
         {
             "days": "01/01/2001",

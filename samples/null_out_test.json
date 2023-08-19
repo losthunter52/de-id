@@ -7,6 +7,9 @@
             ]
         }
     ],
+    "sensitive_columns": ["idade"],
+    "diversity_columns": ["idade"],
+    "closeness_columns": ["idade"],
     "data": [
         {
             "porcentagem": 21,

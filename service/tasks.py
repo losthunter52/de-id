@@ -63,6 +63,8 @@ def process_data(payload, user_pk):
     task_id = current_task.request.id
     errors = [] 
 
+    semaphore = Semaphore()
+
     df = value_to_dataframe(payload.get('data', []))
     sensitive_columns = payload.get('sensitive_columns', [])
     closeness_columns = payload.get('closeness_columns', [])
@@ -74,9 +76,9 @@ def process_data(payload, user_pk):
 
 
     try:
-        real_data_k_anonymity = calculate_t_closeness(df, sensitive_columns, closeness_columns)
-        real_data_t_closeness = calculate_l_diversity(df, sensitive_columns, diversity_columns)
-        real_data_l_diversity = calculate_k_anonymity(df, sensitive_columns)
+        real_data_k_anonymity = calculate_k_anonymity(df, sensitive_columns, semaphore)
+        real_data_t_closeness = calculate_t_closeness(df, sensitive_columns, closeness_columns, semaphore)
+        real_data_l_diversity = calculate_l_diversity(df, sensitive_columns, diversity_columns, semaphore)
     except ValueError as ve:
         a_error_message = str(ve)
     except Exception as e:
@@ -89,7 +91,7 @@ def process_data(payload, user_pk):
             "error_message": a_error_message
         }
         errors.append(error_info)
-        task = Task.objects.create(task_id=task_id, user_id=user_pk, status='ERROR', errors = errors)
+        task = Task.objects.create(task_id=task_id, user_id=user_pk, status='ERROR', errors = errors,  real_data_k_anonymity=real_data_k_anonymity, real_data_l_diversity= real_data_l_diversity, real_data_t_closeness=real_data_t_closeness)
         task.save()
 
     else:
@@ -98,10 +100,7 @@ def process_data(payload, user_pk):
 
         execution_parameters = payload.get('execution_parameters', {})
 
-        semaphore = Semaphore()
         futures = []
-
-        print('1')
 
         with ThreadPoolExecutor() as executor:
             for parameter_id, parameter in enumerate(execution_parameters, start=1):
@@ -114,11 +113,7 @@ def process_data(payload, user_pk):
                 )
                 futures.append(future)
 
-        print('2')
-
         wait(futures)
-
-        print('3')
 
         processed_data = df.to_dict(orient='records')
 
@@ -128,15 +123,13 @@ def process_data(payload, user_pk):
 
 
         try:
-            anonymized_data_k_anonymity = calculate_t_closeness(df, sensitive_columns, closeness_columns)
-            anonymized_data_t_closeness = calculate_l_diversity(df, sensitive_columns, diversity_columns)
-            anonymized_data_l_diversity = calculate_k_anonymity(df, sensitive_columns)
+            anonymized_data_k_anonymity = calculate_k_anonymity(df, sensitive_columns, semaphore)
+            anonymized_data_t_closeness = calculate_t_closeness(df, sensitive_columns, closeness_columns, semaphore)
+            anonymized_data_l_diversity = calculate_l_diversity(df, sensitive_columns, diversity_columns, semaphore)
         except ValueError as ve:
             a_error_message = str(ve)
         except Exception as e:
             a_error_message = "Unespected Error: " + str(e)
-
-        print('4')
 
         if a_error_message:
             error_info = {

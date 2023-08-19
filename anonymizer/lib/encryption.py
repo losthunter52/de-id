@@ -26,7 +26,7 @@ def encrypt_chacha20(df, columns, semaphore, **configuration):
     elif not isinstance(key, str):
         raise ValueError("Encryption key should be an string.")
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
@@ -40,10 +40,14 @@ def encrypt_chacha20(df, columns, semaphore, **configuration):
         return cipher.encrypt(value.encode())
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = df[column].apply(encrypt_value)
-        df[f'{column}[{parameter_id}]_nonce'] = nonce
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = df[column].apply(encrypt_value)
+            df[f'{column}[{parameter_id}]_nonce'] = nonce
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -67,7 +71,7 @@ def encrypt_aes(df, columns, semaphore, **configuration):
     elif not isinstance(key, str):
         raise ValueError("Encryption key should be an string.")
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
@@ -80,9 +84,13 @@ def encrypt_aes(df, columns, semaphore, **configuration):
         return cipher.encrypt(value_padded)
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = df[column].apply(encrypt_value)
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = df[column].apply(encrypt_value)
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
 
@@ -109,7 +117,7 @@ def encrypt_salsa20(df, columns, semaphore, **configuration):
     elif not isinstance(key, str):
         raise ValueError("Encryption key should be an string.")
     
-    check_columns(df, columns)
+    check_columns(df, columns, semaphore)
     convert_to_string(df, columns, semaphore)
     check_nan_fields(df, columns, semaphore)
 
@@ -123,9 +131,13 @@ def encrypt_salsa20(df, columns, semaphore, **configuration):
         return cipher.encrypt(value.encode())
 
     semaphore.acquire()
-    for column in columns:
-        df[column] = df[column].apply(encrypt_value)
-        df[f'{column}[{parameter_id}]_nonce'] = nonce
-    semaphore.release()
+    try:
+        for column in columns:
+            df[column] = df[column].apply(encrypt_value)
+            df[f'{column}[{parameter_id}]_nonce'] = nonce
+    except Exception as e:
+        raise Exception("Unespected Error: " + str(e))
+    finally:
+        semaphore.release()
 
     return None
