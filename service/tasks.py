@@ -40,7 +40,7 @@ ALGORITHM_FUNCTIONS = {
 }
 
 @shared_task
-def process_data(payload, user_pk):
+def assync_process_data(payload, user_pk):
     """
     Process the provided data using the specified algorithms and parameters. When processing starts, a Task object is created, and when processing ends, this object is updated according to the results obtained.
 
@@ -66,6 +66,7 @@ def process_data(payload, user_pk):
     semaphore = Semaphore()
 
     df = value_to_dataframe(payload.get('data', []))
+    description = payload.get('description', 'Object')
     sensitive_columns = payload.get('sensitive_columns', [])
     closeness_columns = payload.get('closeness_columns', [])
     diversity_columns = payload.get('diversity_columns', [])
@@ -91,11 +92,11 @@ def process_data(payload, user_pk):
             "error_message": a_error_message
         }
         errors.append(error_info)
-        task = Task.objects.create(task_id=task_id, user_id=user_pk, status='ERROR', errors = errors,  real_data_k_anonymity=real_data_k_anonymity, real_data_l_diversity= real_data_l_diversity, real_data_t_closeness=real_data_t_closeness)
+        task = Task.objects.create(task_id=task_id, description=description, user_id=user_pk, status='ERROR', errors = errors,  real_data_k_anonymity=real_data_k_anonymity, real_data_l_diversity= real_data_l_diversity, real_data_t_closeness=real_data_t_closeness)
         task.save()
 
     else:
-        task = Task.objects.create(task_id=task_id, user_id=user_pk, status='PENDING', real_data_k_anonymity=real_data_k_anonymity, real_data_l_diversity= real_data_l_diversity, real_data_t_closeness=real_data_t_closeness)
+        task = Task.objects.create(task_id=task_id, description=description, user_id=user_pk, status='PENDING', real_data_k_anonymity=real_data_k_anonymity, real_data_l_diversity= real_data_l_diversity, real_data_t_closeness=real_data_t_closeness)
         task.save()
 
         execution_parameters = payload.get('execution_parameters', {})
@@ -157,6 +158,40 @@ def process_data(payload, user_pk):
     
     return None
 
+def sync_process_data(payload):
+    """
+    Process the provided data using the specified algorithms and parameters. 
+
+    Args:
+        payload (dict): A dictionary containing 'data' and 'execution_parameters'.
+                     'data' (list): List of dictionaries representing the input data.
+                     'execution_parameters' (list): List of dictionaries containing the processing parameters.
+                        Each dictionary contains the following keys:
+                            - 'algorithm' (str): Name of the algorithm to apply.
+                            - 'configuration' (dict): Algorithm-specific configuration parameters.
+                            - 'columns' (dict): Column-specific configuration parameters.
+    Return:
+        None
+    """
+    errors = [] 
+
+    df = value_to_dataframe(payload.get('data', []))
+
+    semaphore = Semaphore()
+
+    execution_parameters = payload.get('execution_parameters', {})
+
+    for parameter_id, parameter in enumerate(execution_parameters, start=1):
+        algorithm = parameter.get('algorithm', {})
+        configuration = parameter.get('configuration', {})
+        configuration.update({"parameter_id": parameter_id})
+        columns = parameter.get('columns', {})
+        apply_algorithm(algorithm, configuration, columns, df, semaphore, parameter_id, errors)
+
+    processed_data = df.to_dict(orient='records')
+
+    return processed_data
+
 def apply_algorithm(algorithm, configuration, columns, df, semaphore, parameter_id, errors):
     """
     Apply the specified algorithm to the DataFrame using the provided configuration and columns.
@@ -173,6 +208,7 @@ def apply_algorithm(algorithm, configuration, columns, df, semaphore, parameter_
     """
 
     algorithm_function = ALGORITHM_FUNCTIONS.get(algorithm)
+    error_message = False
 
 
     if algorithm_function:

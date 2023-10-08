@@ -10,6 +10,7 @@ class Task(models.Model):
         ('COMPLETED', 'Completed'),
     )
 
+    description = models.CharField(max_length=100)
     task_id = models.CharField(max_length=100, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.CharField(max_length=100, default='PENDING')
@@ -24,4 +25,5 @@ class Task(models.Model):
     anonymized_data_l_diversity = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Task ID: {self.task_id}, User: {self.user.username}, Status: {self.status}"
+        return f"Task ID: {self.task_id}, Description: {self.description}, User: {self.user.username}, Status: {self.status}"
+    
