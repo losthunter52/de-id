@@ -81,6 +81,8 @@ def results(request):
         rest_framework.response.Response: The HTTP response object containing the task result or status.
     """
 
+    results = []
+
     user = request.user
     tasks = Task.objects.filter(user=user).order_by('-creation_date')
 
