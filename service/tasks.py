@@ -116,7 +116,11 @@ def assync_process_data(payload, user_pk):
 
         wait(futures)
 
-        processed_data = df.to_dict(orient='records')
+        for column in df.columns:
+            df[column] = df[column].apply(lambda x: x.decode('utf-8', errors='replace') if isinstance(x, bytes) else x)
+
+        decoded_data = df.to_dict(orient='records')
+        processed_data = json.dumps(decoded_data)
 
         anonymized_data_k_anonymity = ""
         anonymized_data_t_closeness = ""
@@ -188,7 +192,11 @@ def sync_process_data(payload):
         columns = parameter.get('columns', {})
         apply_algorithm(algorithm, configuration, columns, df, semaphore, parameter_id, errors)
 
-    processed_data = df.to_dict(orient='records')
+    for column in df.columns:
+            df[column] = df[column].apply(lambda x: x.decode('utf-8', errors='replace') if isinstance(x, bytes) else x)
+
+    decoded_data = df.to_dict(orient='records')
+    processed_data = json.dumps(decoded_data)
 
     return processed_data
 
